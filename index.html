@@ -4,7 +4,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Belka Clip — Mitral Valve Repair · Tangible Industries</title>
+<title>Belka Clip — Mitral Valve Repair · Tangible Vet Tech</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -84,7 +84,7 @@ input[type=range]::-moz-range-thumb {
 <div id="viewport">
   <div id="title-bar">
     <h1>Belka Clip — Delivery Simulator</h1>
-    <p>Tangible Industries &nbsp;·&nbsp; Investor Preview &nbsp;·&nbsp; Confidential</p>
+    <p>Tangible Vet Tech &nbsp;·&nbsp; Investor Preview &nbsp;·&nbsp; Confidential</p>
   </div>
   <div id="legend">
     <div class="legend-item"><span class="swatch" style="background:#3a7ab0"></span>Destino introducer (12 Fr · 4.0 mm OD)</div>
@@ -2612,15 +2612,15 @@ animate();
   'use strict';
 
   var REGIONS = [
-    // Positioned ON the rendered blood-pool structures (the catheter-path fiducials sit
-    // behind/above the visible volume and projected off it). Verified against renders.
-    { key: 'jugular', label: 'Jugular vein',        c: [3.90,  5.00, -0.90] },
-    { key: 'svc',     label: 'Superior vena cava',  c: [3.70,  6.70, -1.10] },
-    { key: 'ra',      label: 'Right atrium',        c: [3.70,  8.90, -0.90] },
-    { key: 'fossa',   label: 'Fossa ovalis',        c: [3.00,  9.60, -0.50] },
-    { key: 'la',      label: 'Left atrium',         c: [2.20,  9.90,  0.00] },
+    // Anchored to the exact fiducial points the catheter uses (CATH_SPLINE_PTS); RA/LA
+    // sit on the spline path between them.
+    { key: 'jugular', label: 'Jugular vein',        c: [4.41,  2.31, -1.60] },   // Jugular Entry
+    { key: 'svc',     label: 'Superior vena cava',  c: [4.83,  6.82, -2.26] },   // SVC Entry
+    { key: 'ra',      label: 'Right atrium',        c: [4.58,  8.18, -1.68] },   // SVC→Fossa
+    { key: 'fossa',   label: 'Fossa ovalis',        c: [4.32,  9.53, -1.10] },   // Fossa Ovalis
+    { key: 'la',      label: 'Left atrium',         c: [2.87, 10.12, -0.35] },   // Fossa→Coaptation
     { key: 'lv',      label: 'Left ventricle',      c: [2.20, 13.00,  0.10] },
-    { key: 'mitral',  label: 'Mitral valve',        c: [1.82, 10.59, -0.04] }
+    { key: 'mitral',  label: 'Mitral valve',        c: [1.683, 10.593, 0.258] } // Coaptation Gap
   ];
 
   var vpEl = document.getElementById('viewport');
@@ -2942,7 +2942,7 @@ window.CLIP_STATES=[{"key":"crimped","niti":{"nv":2513,"nt":5614,"u32":false,"mi
     if (!window.cathSpline || !curGrp) return;
     var tT = (window.__clipTipT != null) ? window.__clipTipT : 0.985;
     cathSpline.getTangentAt(tT, _T).normalize();
-    if (window.__clipTSign === -1) _T.negate();
+    if (window.__clipTSign !== 1) _T.negate();   // flipped 180° (founder request); __clipTSign=1 un-flips
     _hub.set(0, 0, 1).applyQuaternion(curGrp.quaternion);     // hub axis in root frame (after state rotation)
     _qa.setFromUnitVectors(_hub, _T);                         // rotate hub onto the tangent
     _qr.setFromAxisAngle(_T, (window.__clipRoll != null ? window.__clipRoll : Math.PI/2));   // clock arms across coaptation
@@ -3135,7 +3135,7 @@ window.CLIP_STATES=[{"key":"crimped","niti":{"nv":2513,"nt":5614,"u32":false,"mi
   var title = document.createElement('div');
   title.id = 'tour-title';
   title.innerHTML =
-    '<div class="brand">Tangible Industries</div>' +
+    '<div class="brand">Tangible Vet Tech</div>' +
     '<h1>Belka Clip — Transcatheter Mitral Valve Repair</h1>' +
     '<h2>A guided look at how the device is delivered to the heart and repairs a leaking mitral valve, ' +
     'shown on a real patient CT scan.</h2>' +
