@@ -2611,17 +2611,38 @@ animate();
 (function () {
   'use strict';
 
+  // Leaders are anchored to the LIVE catheter spline (cathSpline / CATH_SPLINE_PTS) by sampling
+  // getPoint(t): the 4 fiducials map to the exact control points (t = 0, 1/3, 2/3, 1) and RA/LA
+  // land ON the curved path between them (a CatmullRom bows between control points, so the old
+  // straight-line-interpolated RA/LA sat beside the rendered tube). `c` below is a fallback used
+  // only until the spline global resolves; `t` is the source of truth. (founder: leaders MUST be
+  // on the catheter fiducial points — do not move them off.)
   var REGIONS = [
-    // Anchored to the exact fiducial points the catheter uses (CATH_SPLINE_PTS); RA/LA
-    // sit on the spline path between them.
-    { key: 'jugular', label: 'Jugular vein',        c: [4.41,  2.31, -1.60] },   // Jugular Entry
-    { key: 'svc',     label: 'Superior vena cava',  c: [4.83,  6.82, -2.26] },   // SVC Entry
-    { key: 'ra',      label: 'Right atrium',        c: [4.58,  8.18, -1.68] },   // SVC→Fossa
-    { key: 'fossa',   label: 'Fossa ovalis',        c: [4.32,  9.53, -1.10] },   // Fossa Ovalis (catheter fiducial)
-    { key: 'la',      label: 'Left atrium',         c: [2.87, 10.12, -0.35] },   // Fossa→Coaptation (on the catheter path)
-    { key: 'lv',      label: 'Left ventricle',      c: [2.20, 13.00,  0.10] },
-    { key: 'mitral',  label: 'Mitral valve',        c: [1.683, 10.593, 0.258] } // Coaptation Gap
+    { key: 'jugular', label: 'Jugular vein',        t: 0.0,    c: [4.41,  2.31, -1.60] },  // control pt 0
+    { key: 'svc',     label: 'Superior vena cava',  t: 1/3,    c: [4.83,  6.82, -2.26] },  // control pt 1
+    { key: 'ra',      label: 'Right atrium',        t: 0.50,   c: [4.58,  8.18, -1.68] },  // on path, SVC→fossa
+    { key: 'fossa',   label: 'Fossa ovalis',        t: 2/3,    c: [4.32,  9.53, -1.10] },  // control pt 2
+    { key: 'la',      label: 'Left atrium',         t: 0.84,   c: [2.87, 10.12, -0.35] },  // on path, fossa→coaptation
+    { key: 'lv',      label: 'Left ventricle',      t: 1.0,    c: [1.683,10.593, 0.258] }, // catheter tip (no deeper fiducial)
+    { key: 'mitral',  label: 'Mitral valve',        t: 1.0,    c: [1.683, 10.593, 0.258] } // control pt 3 (coaptation)
   ];
+
+  // Resolve each leader's anchor from the live catheter spline once it exists (it is a global
+  // defined by the main scene script, which may load after this one).
+  var splineResolved = false;
+  function resolveCoords() {
+    if (splineResolved) return;
+    var sp = (typeof cathSpline !== 'undefined') ? cathSpline
+           : (typeof window !== 'undefined' && window.cathSpline) ? window.cathSpline : null;
+    if (!sp || typeof sp.getPoint !== 'function') return;
+    for (var i = 0; i < REGIONS.length; i++) {
+      if (REGIONS[i].t != null) {
+        var p = sp.getPoint(REGIONS[i].t);
+        REGIONS[i].c = [p.x, p.y, p.z];
+      }
+    }
+    splineResolved = true;
+  }
 
   var vpEl = document.getElementById('viewport');
   var NS = 'http://www.w3.org/2000/svg';
@@ -2679,6 +2700,7 @@ animate();
 
   var tmp = new THREE.Vector3();
   function render() {
+    resolveCoords();                              // pull anchors onto the live catheter spline
     if (active < 0) return;
     var w = vpEl.clientWidth, h = vpEl.clientHeight;
     var rg = REGIONS[active], e = els[active];
