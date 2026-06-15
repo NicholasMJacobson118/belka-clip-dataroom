@@ -2617,8 +2617,8 @@ animate();
     { key: 'jugular', label: 'Jugular vein',        c: [4.41,  2.31, -1.60] },   // Jugular Entry
     { key: 'svc',     label: 'Superior vena cava',  c: [4.83,  6.82, -2.26] },   // SVC Entry
     { key: 'ra',      label: 'Right atrium',        c: [4.58,  8.18, -1.68] },   // SVC→Fossa
-    { key: 'fossa',   label: 'Fossa ovalis',        c: [4.32,  9.53, -1.10] },   // Fossa Ovalis
-    { key: 'la',      label: 'Left atrium',         c: [2.87, 10.12, -0.35] },   // Fossa→Coaptation
+    { key: 'fossa',   label: 'Fossa ovalis',        c: [3.38, 10.09, -0.55] },   // introducer tip / catheter exit
+    { key: 'la',      label: 'Left atrium',         c: [3.25, 10.55, -0.65] },   // Fossa→Coaptation (right + lower)
     { key: 'lv',      label: 'Left ventricle',      c: [2.20, 13.00,  0.10] },
     { key: 'mitral',  label: 'Mitral valve',        c: [1.683, 10.593, 0.258] } // Coaptation Gap
   ];
@@ -2686,12 +2686,12 @@ animate();
     if (tmp.z > 1) { e.line.style.opacity = '0'; e.dot.style.opacity = '0'; e.el.style.opacity = '0'; return; }
     var px = (tmp.x + 1) / 2 * w, py = (-tmp.y + 1) / 2 * h;
     var side = px > w * 0.5 ? 1 : -1;            // lead toward the nearer screen edge
-    var kx = px + side * 52, ky = py - 44;        // knee of the leader
+    var below = py < h * 0.20;                    // dot near the top edge → drop the label BELOW it
+    var kx = px + side * 52, ky = below ? (py + 52) : (py - 44);   // knee of the leader
     var lw = e.el.offsetWidth || 80;
-    // label sits just above the horizontal underline, on the outboard side of the knee
     var labelLeft = side > 0 ? kx : (kx - lw);
     e.el.style.left = labelLeft.toFixed(0) + 'px';
-    e.el.style.top = (ky - 20).toFixed(0) + 'px';
+    e.el.style.top = (below ? ky + 2 : ky - 20).toFixed(0) + 'px';
     var endX = kx + side * lw;
     e.line.setAttribute('points', px + ',' + py + ' ' + kx + ',' + ky + ' ' + endX + ',' + ky);
     e.dot.setAttribute('cx', px); e.dot.setAttribute('cy', py);
