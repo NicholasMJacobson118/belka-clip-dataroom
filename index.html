@@ -40,6 +40,9 @@ body {
 #step-num   { font-size: 10px; color: #4a5070; text-transform: uppercase; margin-bottom: 4px; }
 #step-title { font-size: 14px; font-weight: 700; color: #7ec8e3; margin-bottom: 6px; }
 #step-desc  { font-size: 11px; color: #8890a8; line-height: 1.55; min-height: 50px; }
+#step-prompt { font-size: 11px; color: #cfe0f5; line-height: 1.5; margin: 8px 0 2px;
+  padding: 7px 9px; background: #14223a; border-left: 3px solid #2b6ea8; border-radius: 4px; }
+#step-prompt b { color: #7ec8e3; }
 .nav-row { display: flex; gap: 8px; margin-top: 10px; }
 .nav-btn {
   flex: 1; padding: 7px 0; background: #252740; border: 1px solid #3a3e60;
@@ -77,9 +80,38 @@ input[type=range]::-moz-range-thumb {
 #readout td { padding: 2px 0; color: #8890a8; }
 #readout td:last-child { text-align: right; color: #7ec8e3; font-weight: 600; }
 .spec-line { margin-top: 8px; font-size: 10px; color: #3a4060; line-height: 1.7; }
+/* --- Non-confidential capture mode: ?mode=nonconfidential (hides device specs, keeps anatomy + guided-tour captions). Add &panel=off for a clean cinematic frame. --- */
+body.nc #legend .legend-item:nth-child(-n+7) { display: none !important; }   /* hide Destino Fr, EI zones, NiTi/PEEK arms, hub Ø — keep CT/leaflets/annulus/landmarks */
+body.nc #panel > .card:not(:first-child)      { display: none !important; }   /* hide Clip Platform / Introducer Sheath / Handle Controls spec cards — keep guided-tour card */
+body.nopanel #panel                           { display: none !important; }   /* optional: hide entire side panel for a pure cinematic frame */
 </style>
 </head>
 <body>
+
+<script>
+/* On-page JS error reporter (debug aid) — surfaces runtime errors so they don't fail silently. */
+window.addEventListener('error',function(e){try{var d=document.getElementById('__errbox');if(!d){d=document.createElement('div');d.id='__errbox';d.style.cssText='position:fixed;left:6px;bottom:6px;max-width:48ch;max-height:32vh;overflow:auto;z-index:99999;background:rgba(70,0,0,.92);color:#ffd;font:11px/1.4 monospace;padding:6px 8px;border:1px solid #b55;border-radius:4px;white-space:pre-wrap';document.body.appendChild(d);d.textContent='JS error(s):';}d.textContent+='\n'+(e.message||e.error)+'  ['+((e.filename||'').split('/').pop())+':'+e.lineno+']';}catch(_){}});
+</script>
+
+<script>
+/* Non-confidential capture mode. Activate with ?mode=nonconfidential (alias ?nc=1).
+   Add &panel=off to hide the entire side panel for a pure cinematic frame. */
+(function () {
+  function applyMode() {
+    var q = new URLSearchParams(location.search);
+    var nc = q.get('mode') === 'nonconfidential' || q.get('nc') === '1'
+             || location.hash.indexOf('nonconfidential') >= 0;
+    if (nc) {
+      document.body.classList.add('nc');
+      var sub = document.querySelector('#title-bar p');
+      if (sub) sub.textContent = 'Tangible Vet Tech  ·  Patient CT (de-identified)  ·  Capability demonstration';
+    }
+    if (q.get('panel') === 'off') document.body.classList.add('nopanel');
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyMode);
+  else applyMode();
+})();
+</script>
 
 <div id="viewport">
   <div id="title-bar">
@@ -105,35 +137,40 @@ input[type=range]::-moz-range-thumb {
 </div>
 
 <div id="panel">
-  <div class="card">
+  <div class="card" id="card-step">
+    <div class="sec-head">Guided Walkthrough</div>
     <div id="step-num">Step 1 / 10</div>
     <div id="step-title">—</div>
     <div id="step-desc">—</div>
+    <div id="step-prompt">—</div>
     <div class="nav-row">
       <button class="nav-btn" id="btn-prev">◀ Prev</button>
+      <button class="nav-btn" id="btn-play">▶ Play</button>
       <button class="nav-btn" id="btn-next">Next ▶</button>
     </div>
     <div id="dots"></div>
   </div>
 
-  <div class="card">
+  <div class="card" id="card-clip">
     <div class="sec-head">Clip Platform (12 Fr)</div>
-    <div style="font-size:10px;color:#5a6080;margin-bottom:5px">Arm length → annulus AP</div>
+    <div style="font-size:10px;color:#5a6080;margin-bottom:5px">Choose clip size · set the clamp angle</div>
     <div id="variant-ctrl" style="display:flex;gap:5px;margin-bottom:10px"></div>
     <div id="clamp-ctrl"></div>
     <div class="spec-line" id="platform-spec" style="margin-top:6px"></div>
   </div>
 
-  <div class="card">
+  <div class="card" id="card-sheath">
     <div class="sec-head">Introducer Sheath</div>
+    <div style="font-size:10px;color:#5a6080;margin-bottom:5px">Slide to advance / retract the catheter</div>
     <div id="intro-ctrl"></div>
     <div class="spec-line" style="margin-top:4px;text-align:center;letter-spacing:0.05em">
       ← retract &nbsp;|&nbsp; fossa ovalis &nbsp;|&nbsp; advance →
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="card-handle">
     <div class="sec-head">Handle Controls</div>
+    <div style="font-size:10px;color:#5a6080;margin-bottom:5px">Steer the tip · open the arms · grasp the leaflets</div>
     <svg id="handle-svg" viewBox="0 0 240 468" style="width:100%;display:block;user-select:none">
       <!-- background panels -->
       <rect x="6" y="4" width="228" height="298" rx="7" fill="#171929" stroke="#232438" stroke-width="1"/>
@@ -201,6 +238,7 @@ input[type=range]::-moz-range-thumb {
       <text x="194" y="432" fill="#252840" font-size="7" font-family="Segoe UI,system-ui">CLOSE</text>
       <rect id="hk-ar-thumb" x="168" y="354" width="22" height="14" rx="3" fill="#c04020" stroke="#e05030" stroke-width="1" style="cursor:ns-resize"/>
       <text id="hk-ar-val" x="179" y="450" text-anchor="middle" fill="#e06030" font-size="9" font-family="Segoe UI,system-ui" font-weight="600">OPEN</text>
+      <rect id="hk-hl" rx="9" fill="none" stroke="#5fb0e0" stroke-width="2.5" style="display:none;pointer-events:none"/>
     </svg>
   </div>
 
@@ -1453,6 +1491,23 @@ var STEPS = [
     ds:20,  dr:0,  cd:30, cr:0,                  va:0,    aL:0,    aR:0,    cp:1, clip:false },
 ];
 
+// Plain-language prompt shown in the Explore panel at each step — what to do / control.
+var STEP_PROMPTS = [
+  '<b>➜ Press ▶ Play</b> to watch the full delivery, or <b>Next</b> to step through.',
+  '<b>➜ Drag the “Sheath tip” slider</b> to advance the catheter up the jugular vein.',
+  '<b>➜ Use “Destino Steer”</b> to aim the tip toward the fossa ovalis.',
+  '<b>➜ Use “Catheter Tip Deflect”</b> to point at the valve — then try <b>“◉ Valve View”</b>.',
+  '<b>➜ Turn on “◉ Valve View”</b> to see the leaflets, then <b>“♡ 4D Valve (TEE)”</b> to watch them beat.',
+  'The lower (ventricular) arms spring open below the leaflets.',
+  'The upper (atrial) arms are exposed above the leaflets.',
+  '<b>➜ Drag “L Clasp”</b> to capture the left leaflet.',
+  '<b>➜ Drag “R Clasp”</b> to capture the right leaflet.',
+  '<b>➜ Adjust “Clamp angle”</b> — both leaflets grasped, the clip closes.',
+  'The clip locks onto its hub.',
+  'The clip detaches from the delivery system.',
+  '<b>➜ Drag to rotate</b> — repair complete, the leak is reduced.'
+];
+
 // ─── Sim state ────────────────────────────────────────────────────────────
 var sim = { idx:0, ds:0, cd:0, va:1, aL:1, aR:1, cp:0, dr:0, cr:0, cc:0, manual:false };
 
@@ -1778,15 +1833,17 @@ var Z3T_SEGS = 6;
 var Z3T_L    = Z3 / Z3T_SEGS;          // segment length in mm
 var z3TipPivots = [];
 var z3TipPrev   = z3TipRoll;
-var z3TipMat    = new THREE.MeshPhongMaterial({ color: 0x60c878, shininess: 60 });
+var z3TipMat    = new THREE.MeshPhongMaterial({ color: 0x5a9fd4, shininess: 60 });
 
 for (var zti = 0; zti < Z3T_SEGS; zti++) {
   var ztpiv = new THREE.Group();
   z3TipPrev.add(ztpiv);
-  ztpiv.add(new THREE.Mesh(
+  var __zmesh = new THREE.Mesh(
     new THREE.CylinderGeometry(CATH_OD/2*SC, CATH_OD/2*SC, Z3T_L*SC, 14, 1),
     z3TipMat
-  ));
+  );
+  ztpiv.add(__zmesh);
+  (window.__z3TipMeshes || (window.__z3TipMeshes = [])).push(__zmesh);
   var ztnext = new THREE.Group();
   ztnext.position.y = Z3T_L * SC;
   ztpiv.add(ztnext);
@@ -1868,6 +1925,11 @@ var cathSpline = new THREE.CatmullRomCurve3(CATH_SPLINE_PTS);
 
 var SP_SEGS = 100, SP_RIDX = 14;
 var SP_TOTAL_IDX = SP_SEGS * SP_RIDX * 6;
+// Inner catheter tube uses fewer radial segments (12) → its own index total.
+// Using SP_TOTAL_IDX for it would over-draw the inner cath ~17% past the sheath
+// tip (a stray tube poking out where the steerable tip bends away).
+var SP_CATH_RIDX = 12;
+var SP_CATH_TOTAL_IDX = SP_SEGS * SP_CATH_RIDX * 6;
 var SP_LEN_MM = 102;                              // approximate spline path length (mm)
 var T_DEST_TIP_FRAC = DEST_TIP / SP_LEN_MM;      // ≈ 0.196 — Destino tip as fraction of path
 
@@ -1878,7 +1940,7 @@ var spIntroMesh = new THREE.Mesh(spIntroGeo,
 scene.add(spIntroMesh);
 
 // Inner catheter tube (2.33 mm OD)
-var spCathGeo  = new THREE.TubeGeometry(cathSpline, SP_SEGS, CATH_OD/2*SC, 12, false);
+var spCathGeo  = new THREE.TubeGeometry(cathSpline, SP_SEGS, CATH_OD/2*SC, SP_CATH_RIDX, false);
 var spCathMesh = new THREE.Mesh(spCathGeo,
   new THREE.MeshPhongMaterial({ color:0x5a9fd4, transparent:true, opacity:0.80 }));
 scene.add(spCathMesh);
@@ -1913,16 +1975,21 @@ function updateTubeFrac(idx) {
   // a lay viewer. Restored for the deploy beats where the steering tip carries the clip.
   if (window.__cleanCath) {
     spIntroGeo.setDrawRange(0, Math.floor(SP_TOTAL_IDX * introF));
-    spCathGeo.setDrawRange(0,  Math.floor(SP_TOTAL_IDX * (cathF > 0 ? introF : 0)));
+    spCathGeo.setDrawRange(0,  Math.floor(SP_CATH_TOTAL_IDX * cathF));   // inner cath follows the spline to the valve (one smooth tube)
     if (window.__destTipMeshes) for (var m = 0; m < __destTipMeshes.length; m++) __destTipMeshes[m].visible = false;
+    if (window.__z3TipMeshes)   for (var mz = 0; mz < __z3TipMeshes.length; mz++) __z3TipMeshes[mz].visible = false;
     return;
   }
   if (window.__destTipMeshes) for (var m2 = 0; m2 < __destTipMeshes.length; m2++) __destTipMeshes[m2].visible = true;
   // Spline tubes cover the straight body only; Destino tip arc covers the last 20 mm.
   var tPivot = Math.max(0, introF - T_DEST_TIP_FRAC);
   spIntroGeo.setDrawRange(0, Math.floor(SP_TOTAL_IDX * tPivot));
-  spCathGeo.setDrawRange(0,  Math.floor(SP_TOTAL_IDX * (cathF > 0 ? tPivot : 0)));
+  spCathGeo.setDrawRange(0,  Math.floor(SP_CATH_TOTAL_IDX * (cathF > 0 ? tPivot : 0)));
 }
+// Explore shows the LIVE steerable tip so the catheter RESPONDS to the handle controls
+// (steering / deflection bend the visible tip). The tour sets __cleanCath=true per beat
+// for its clean cinematic tube.
+window.__cleanCath = false;
 updateTubeFrac(0);
 
 // Intro slider wired in the UI section below (after makeSlider is fully initialised).
@@ -1940,9 +2007,9 @@ scene.add(heartGrp);
 
 var HM = {
   ct:      new THREE.MeshPhongMaterial({ color:0x5080b8, transparent:true, opacity:0.12, side:THREE.DoubleSide, depthWrite:false }),
-  annulus: new THREE.MeshPhongMaterial({ color:0xe0b850, transparent:true, opacity:0.70, side:THREE.DoubleSide }),
-  aml:     new THREE.MeshPhongMaterial({ color:0xd8b878, transparent:true, opacity:0.55, side:THREE.DoubleSide }),
-  pml:     new THREE.MeshPhongMaterial({ color:0xd8b878, transparent:true, opacity:0.55, side:THREE.DoubleSide }),
+  annulus: new THREE.MeshPhongMaterial({ color:0xe6b85a, emissive:0x4a3208, transparent:true, opacity:0.80, shininess:60, side:THREE.DoubleSide }),
+  aml:     new THREE.MeshPhongMaterial({ color:0xe89a64, emissive:0x5a230f, transparent:true, opacity:0.62, shininess:55, side:THREE.DoubleSide, depthWrite:false }),
+  pml:     new THREE.MeshPhongMaterial({ color:0xe89a64, emissive:0x5a230f, transparent:true, opacity:0.62, shininess:55, side:THREE.DoubleSide, depthWrite:false }),
 };
 
 function loadHeartSTL(url, mat) {
@@ -2063,7 +2130,7 @@ var heartMeshRefs = { ct: null, aml: null, pml: null, annulus: null };
 (function() {
   var on = true;
   var btn = document.createElement('button');
-  btn.textContent = '♥ Heart';
+  btn.id = 'btn-heart'; btn.textContent = '♥ Heart';
   btn.style.cssText = 'position:absolute;top:12px;right:12px;padding:5px 12px;' +
     'background:#1a1c2e;border:1px solid #7b2234;color:#d08090;border-radius:4px;' +
     'cursor:pointer;font-size:11px;z-index:20;letter-spacing:0.04em;';
@@ -2076,7 +2143,7 @@ var heartMeshRefs = { ct: null, aml: null, pml: null, annulus: null };
 // Clip Detail button
 (function() {
   var btn = document.createElement('button');
-  btn.textContent = '⊕ Clip Detail';
+  btn.id = 'btn-clipdetail'; btn.textContent = '⊕ Clip Detail';
   btn.title = 'Open close-up clip release animation';
   btn.style.cssText = 'position:absolute;top:44px;right:12px;padding:5px 12px;' +
     'background:#1a1c2e;border:1px solid #2858b0;color:#8aacdf;border-radius:4px;' +
@@ -2084,6 +2151,27 @@ var heartMeshRefs = { ct: null, aml: null, pml: null, annulus: null };
   btn.onmouseenter = function() { btn.style.background = '#1e2244'; };
   btn.onmouseleave = function() { btn.style.background = '#1a1c2e'; };
   btn.onclick = function() { window.open('clip_release.html', '_blank'); };
+  document.getElementById('viewport').appendChild(btn);
+})();
+
+// Valve View — hide the CT-volume heart and show just the valve leaflets (easier to see).
+(function() {
+  var valveOnly = false;
+  var btn = document.createElement('button');
+  btn.id = 'btn-valveview'; btn.textContent = '◉ Valve View';
+  btn.title = 'Hide the heart; show just the valve leaflets';
+  btn.style.cssText = 'position:absolute;top:76px;right:12px;padding:5px 12px;' +
+    'background:#1a1c2e;border:1px solid #2a7d5a;color:#7ad0a0;border-radius:4px;' +
+    'cursor:pointer;font-size:11px;z-index:20;letter-spacing:0.04em;';
+  btn.onclick = function() {
+    valveOnly = !valveOnly;
+    btn.style.opacity = valveOnly ? '0.75' : '1';
+    btn.style.background = valveOnly ? '#16321f' : '#1a1c2e';
+    if (window.HEART_VOLSEQ_R) HEART_VOLSEQ_R.setVisible(!valveOnly);
+    HM.aml.opacity = valveOnly ? 0.92 : 0.55; HM.aml.transparent = true;
+    HM.pml.opacity = valveOnly ? 0.92 : 0.55; HM.pml.transparent = true;
+    HM.annulus.opacity = valveOnly ? 0.95 : 0.70;
+  };
   document.getElementById('viewport').appendChild(btn);
 })();
 
@@ -2178,8 +2266,11 @@ function applyKin() {
   atrL.rotation.z =  (lerp(150, 0, sim.aL) + atrExtra) * D;
   atrR.rotation.z = -(lerp(150, 0, sim.aR) + atrExtra) * D;
 
-  // Clip clocking via torque coil — rotates clip around hub axis independent of catheter roll
-  clipGrp.rotation.y = sim.cc * D;
+  // Clip clocking via torque coil — rotates clip around hub axis independent of catheter roll.
+  // From step 6 (ATRIAL ARMS DEPLOY) onward the clip is clocked 90° so the arms grasp ACROSS
+  // the line of coaptation; sim.cc remains a manual fine-tune on top of that.
+  var ccEff = sim.cc + (sim.idx >= 6 ? 90 : 0);
+  clipGrp.rotation.y = ccEff * D;
 
   // Clip visible from VENT ARMS step onwards (hidden during valve crossing — inside sheath)
   clipGrp.visible = sim.idx >= 5;
@@ -2206,7 +2297,7 @@ function attachClipToCatheter() {
   if (!clipIsWorld) return;
   scene.remove(clipGrp);
   clipGrp.position.set(0, 0, 0);
-  clipGrp.rotation.set(Math.PI, sim.cc * D, 0);
+  clipGrp.rotation.set(Math.PI, (sim.cc + (sim.idx >= 6 ? 90 : 0)) * D, 0);
   clipGrp.scale.set(1, 1, 1);
   z3TipEnd.add(clipGrp);
   clipIsWorld = false;
@@ -2220,6 +2311,9 @@ function refreshStep() {
   document.getElementById('step-num').textContent   = 'Step ' + (sim.idx+1) + ' / ' + STEPS.length;
   document.getElementById('step-title').textContent = st.label;
   document.getElementById('step-desc').textContent  = st.desc;
+  var _pr = document.getElementById('step-prompt');
+  if (_pr) _pr.innerHTML = STEP_PROMPTS[sim.idx] || '';
+  if (window.__exploreHighlight) __exploreHighlight(sim.idx);
   updateTubeFrac(sim.idx);
   var ds = document.querySelectorAll('.dot');
   for (var i=0; i<ds.length; i++) {
@@ -2256,6 +2350,29 @@ document.getElementById('btn-next').onclick = function() {
     if (sim.idx === STEPS.length - 1) attachClipToWorld();
     sim.manual = false; refreshStep();
   }
+};
+
+// Play / pause — auto-advance through the steps in Explore.
+var explorePlaying = false, exploreTimer = null;
+function exploreStop() {
+  explorePlaying = false; clearTimeout(exploreTimer);
+  document.getElementById('btn-play').textContent = '▶ Play';
+}
+function exploreAdvance() {
+  if (!explorePlaying) return;
+  if (sim.idx < STEPS.length - 1) {
+    document.getElementById('btn-next').onclick();
+    exploreTimer = setTimeout(exploreAdvance, 2600);
+  } else { exploreStop(); }
+}
+document.getElementById('btn-play').onclick = function() {
+  if (explorePlaying) { exploreStop(); return; }
+  if (sim.idx >= STEPS.length - 1) {            // at the end → restart from step 1
+    attachClipToCatheter(); sim.idx = 0; sim.manual = false; refreshStep();
+  }
+  explorePlaying = true;
+  document.getElementById('btn-play').textContent = '❚❚ Pause';
+  exploreTimer = setTimeout(exploreAdvance, 1300);
 };
 
 var dotsEl = document.getElementById('dots');
@@ -2592,6 +2709,7 @@ function animate() {
   applyKin();
   updateReadout();
   syncHandle();
+  if (window.__exploreCamFrame) __exploreCamFrame();   // Explore guided camera tween (runs before orbit.update)
   orbit.update();
   updateLabels();
   renderer.render(scene, camera);
@@ -2611,37 +2729,49 @@ animate();
 (function () {
   'use strict';
 
-  // Leaders are anchored to the LIVE catheter spline (cathSpline / CATH_SPLINE_PTS) by sampling
-  // getPoint(t): the 4 fiducials map to the exact control points (t = 0, 1/3, 2/3, 1) and RA/LA
-  // land ON the curved path between them (a CatmullRom bows between control points, so the old
-  // straight-line-interpolated RA/LA sat beside the rendered tube). `c` below is a fallback used
-  // only until the spline global resolves; `t` is the source of truth. (founder: leaders MUST be
-  // on the catheter fiducial points — do not move them off.)
+  // Each leader END is pinned EXACTLY to one of the four catheter FIDUCIAL landmarks
+  // (== LM_DATA: Jugular Entry, SVC Entry, Fossa Ovalis, Coaptation Gap). The chamber-transit
+  // labels (RA / LA / LV) have no fiducial of their own, so each shares its NEAREST fiducial.
+  // t is null so resolveCoords() leaves `c` fixed on the landmark — these coordinates ARE the
+  // source of truth, not a spline sample. (founder: leader ends MUST sit on the catheter
+  // fiducial points — do not move them off.)
   var REGIONS = [
-    { key: 'jugular', label: 'Jugular vein',        t: 0.0,    c: [4.41,  2.31, -1.60] },  // control pt 0
-    { key: 'svc',     label: 'Superior vena cava',  t: 1/3,    c: [4.83,  6.82, -2.26] },  // control pt 1
-    { key: 'ra',      label: 'Right atrium',        t: 0.50,   c: [4.58,  8.18, -1.68] },  // on path, SVC→fossa
-    { key: 'fossa',   label: 'Fossa ovalis',        t: 2/3,    c: [4.32,  9.53, -1.10] },  // control pt 2
-    { key: 'la',      label: 'Left atrium',         t: 0.84,   c: [2.87, 10.12, -0.35] },  // on path, fossa→coaptation
-    { key: 'lv',      label: 'Left ventricle',      t: 1.0,    c: [1.683,10.593, 0.258] }, // catheter tip (no deeper fiducial)
-    { key: 'mitral',  label: 'Mitral valve',        t: 1.0,    c: [1.683, 10.593, 0.258] } // control pt 3 (coaptation)
+    { key: 'jugular', label: 'Jugular vein',        t: null, c: [4.41,  2.31, -1.60] },  // Jugular Entry fiducial
+    { key: 'svc',     label: 'Superior vena cava',  t: null, c: [4.83,  6.82, -2.26] },  // SVC Entry fiducial
+    { key: 'ra',      label: 'Right atrium',        t: null, c: [4.32,  9.53, -1.10] },  // → nearest fiducial: Fossa Ovalis
+    { key: 'fossa',   label: 'Fossa ovalis',        t: null, c: [4.32,  9.53, -1.10] },  // Fossa Ovalis fiducial
+    { key: 'la',      label: 'Left atrium',         t: null, c: [1.82, 10.59, -0.04] },  // → nearest fiducial: Coaptation Gap
+    { key: 'lv',      label: 'Left ventricle',      t: null, c: [1.82, 10.59, -0.04] },  // → nearest fiducial: Coaptation Gap
+    { key: 'mitral',  label: 'Mitral valve',        t: null, c: [1.82, 10.59, -0.04] }   // Coaptation Gap fiducial
   ];
 
-  // Resolve each leader's anchor from the live catheter spline once it exists (it is a global
-  // defined by the main scene script, which may load after this one).
-  var splineResolved = false;
+  // Anchor every leader to the catheter fiducial points (the same control points the controls
+  // section / catheter spline use). RA and LA have no fiducial of their own, so they ride ON the
+  // catheter path between fiducials. A local CatmullRom built from the known fiducials guarantees
+  // the anchors are correct immediately and never sit off the tube, even before the global
+  // cathSpline resolves. If the live spline exists we prefer it; otherwise the local curve matches.
+  // Anchor leaders to the LANDMARK fiducials (the dots in the controls / LM_DATA), NOT the
+  // catheter spline. The spline's final control point is intentionally compensated ~3 mm past
+  // the true coaptation for clip landing, which left the valve leader sitting off the CT volume
+  // in the investor walkthrough. RA and LA (no fiducial of their own) ride on a CatmullRom
+  // through the true landmarks. These points are fixed, so the leaders match in BOTH the
+  // Explore (catheter mesh) view and the investor (CT volume) view.
+  var LANDMARK_CURVE = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(4.41,  2.31, -1.60),   // Jugular Entry
+    new THREE.Vector3(4.83,  6.82, -2.26),   // SVC Entry
+    new THREE.Vector3(4.32,  9.53, -1.10),   // Fossa Ovalis
+    new THREE.Vector3(1.82,  10.59, -0.04)   // Coaptation Gap (true landmark == LM_DATA dot)
+  ]);
+  var coordsResolved = false;
   function resolveCoords() {
-    if (splineResolved) return;
-    var sp = (typeof cathSpline !== 'undefined') ? cathSpline
-           : (typeof window !== 'undefined' && window.cathSpline) ? window.cathSpline : null;
-    if (!sp || typeof sp.getPoint !== 'function') return;
+    if (coordsResolved) return;
     for (var i = 0; i < REGIONS.length; i++) {
       if (REGIONS[i].t != null) {
-        var p = sp.getPoint(REGIONS[i].t);
+        var p = LANDMARK_CURVE.getPoint(REGIONS[i].t);
         REGIONS[i].c = [p.x, p.y, p.z];
       }
     }
-    splineResolved = true;
+    coordsResolved = true;
   }
 
   var vpEl = document.getElementById('viewport');
@@ -2659,13 +2789,13 @@ animate();
     line.setAttribute('stroke', 'rgba(223,244,255,0.9)');
     line.setAttribute('stroke-width', '1.4');
     line.setAttribute('stroke-linejoin', 'round');
-    line.style.cssText = 'opacity:0;transition:opacity .35s;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.8));';
+    line.style.cssText = 'display:none;opacity:0;transition:opacity .35s;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.8));';
     svg.appendChild(line);
     var dot = document.createElementNS(NS, 'circle');
     dot.setAttribute('r', '3.4');
     dot.setAttribute('fill', '#eaf7ff');
     dot.setAttribute('stroke', 'rgba(0,0,0,0.5)'); dot.setAttribute('stroke-width', '1');
-    dot.style.cssText = 'opacity:0;transition:opacity .35s;';
+    dot.style.cssText = 'display:none;opacity:0;transition:opacity .35s;';
     svg.appendChild(dot);
     var el = document.createElement('div');
     el.textContent = rg.label;
@@ -2894,6 +3024,7 @@ window.HEART_VOLSEQ.frames=[
     setOpacity:function(v){uniforms.uDensity.value=v;},
     setBeat:function(on){beat.play=on;if(on)beat.t0=performance.now();},
     setRate:function(ms){beat.cycleMs=ms;},
+    phase:function(){return ((performance.now()-beat.t0)%beat.cycleMs)/beat.cycleMs;},
     // region focus: name ('ra','fossa','la','lv','svc') or null to clear
     setFocusRegion:function(name){uniforms.uActiveRegion.value = (name&&REG[name])?REG[name]:-1;},
     setFocus:function(f){uniforms.uFocus.value=Math.max(0,Math.min(1,f));},
@@ -2967,7 +3098,11 @@ window.CLIP_STATES=[{"key":"crimped","niti":{"nv":2513,"nt":5614,"u32":false,"mi
     if (window.__clipTSign !== 1) _T.negate();   // flipped 180° (founder request); __clipTSign=1 un-flips
     _hub.set(0, 0, 1).applyQuaternion(curGrp.quaternion);     // hub axis in root frame (after state rotation)
     _qa.setFromUnitVectors(_hub, _T);                         // rotate hub onto the tangent
-    _qr.setFromAxisAngle(_T, (window.__clipRoll != null ? window.__clipRoll : Math.PI/2));   // clock arms across coaptation
+    // Clock the arms about the delivery (tangent) axis. From "Crossing the valve" (step 4)
+    // forward, add 90° so the arms straddle the line of coaptation in the investor walkthrough.
+    var _roll = (window.__clipRoll != null ? window.__clipRoll : Math.PI/2);
+    if (typeof sim !== 'undefined' && sim.idx >= 4) _roll += Math.PI/2;
+    _qr.setFromAxisAngle(_T, _roll);   // clock arms across coaptation
     root.quaternion.copy(_qr).multiply(_qa);
   };
 
@@ -3040,8 +3175,8 @@ window.CLIP_STATES=[{"key":"crimped","niti":{"nv":2513,"nt":5614,"u32":false,"mi
     // Show the mitral valve WITH the heart (front), labeled. The NEXT beat then rotates
     // around to BEHIND and zooms onto the valve while the heart fades — revealing the
     // catheter + valve. The deploy beats then stay in that behind/zoomed view.
-    { idx: 3, region: 'mitral', showValve: true, title: 'The mitral valve',
-      cap: 'This is the leaking mitral valve — seen here within the beating heart. It is the target of the repair.',
+    { idx: 3, region: 'mitral', valve4d: true, title: 'The mitral valve — fused from TEE',
+      cap: 'The patient’s own mitral valve, its motion captured from echo (TEE) and fused onto the CT heart. Watch it beat — this is the leak we repair.',
       cam: { t: [1.82, 10.59, -0.04], p: [7.0, 9.2, 7.6] } },
     { idx: 4, region: '', heartOff: true, showValve: true, clipState: 'crimped', title: 'Crossing the valve',
       cap: 'Rotating behind the valve: the tip passes through into the left ventricle, the heart’s main pumping chamber.',
@@ -3313,6 +3448,8 @@ window.CLIP_STATES=[{"key":"crimped","niti":{"nv":2513,"nt":5614,"u32":false,"mi
       setHeartTarget(b.heartOff ? 0 : 1, fromUser ? 500 : (b.fadeMs || 1100));  // smooth fade
     }
     // Valve leaflets shown when the heart is hidden OR explicitly requested (showValve).
+    // Fuse the beating TEE valve VOLUME into the heart on flagged beats (it hides the surface leaflets).
+    if (window.VALVE_VOLSEQ_R) VALVE_VOLSEQ_R.setPlaying(!!b.valve4d);
     setValveVisible(!!(b.heartOff || b.showValve));
     // Real Rhino clip (NiTi + overmold paddles) during deploy; hide the procedural arms.
     if (window.CLIP_STATES_R) {
@@ -3385,6 +3522,108 @@ window.CLIP_STATES=[{"key":"crimped","niti":{"nv":2513,"nt":5614,"u32":false,"mi
   window.TOUR_GO = function (i) { document.getElementById('tour-title').style.display = 'none'; orbit.enabled = false; playing = false; goTo(i, true); };
 })();
 
+</script>
+
+<!-- 4D TEE valve — VOLUME render (CT–TEE fusion); supersedes the surface leaflets -->
+<script src="valve_volume.js"></script>
+<script src="valve_volseq_render.js"></script>
+
+<!-- Explore UX: pulse-highlight the control area / knob / button to use at each step -->
+<script>
+(function () {
+  var css = document.createElement('style');
+  css.textContent = [
+    '.area-hl{box-shadow:0 0 0 2px #5fb0e0,0 0 16px rgba(95,176,224,0.55)!important;border-radius:6px;animation:areaPulse 1.5s ease-in-out infinite;}',
+    '@keyframes areaPulse{0%,100%{box-shadow:0 0 0 2px #5fb0e0,0 0 9px rgba(95,176,224,0.35);}50%{box-shadow:0 0 0 2px #9adcff,0 0 22px rgba(95,176,224,0.78);}}',
+    '#hk-hl{animation:svgPulse 1.5s ease-in-out infinite;}',
+    '@keyframes svgPulse{0%,100%{stroke:#5fb0e0;}50%{stroke:#9adcff;}}'
+  ].join('\n');
+  document.head.appendChild(css);
+  // step idx -> area to highlight: a panel card, on-screen buttons, and/or a handle knob bbox [x,y,w,h]
+  var MAP = {
+    0:{card:'card-step'},
+    1:{card:'card-sheath'},
+    2:{card:'card-handle',knob:[33,21,74,74]},     // Destino steering knob
+    3:{card:'card-handle',knob:[133,21,74,74]},    // Tip deflection knob
+    4:{buttons:['btn-valveview','btn-4dvalve']},   // Valve View / 4D Valve
+    5:{card:'card-handle',knob:[10,307,220,26]},   // Ventricular arms button
+    6:{card:'card-handle'},
+    7:{card:'card-handle',knob:[46,350,32,92]},    // L clasp
+    8:{card:'card-handle',knob:[164,350,32,92]},   // R clasp
+    9:{card:'card-clip'},                          // Clamp angle
+    12:{card:'card-step'}
+  };
+  var CARDS = ['card-step','card-clip','card-sheath','card-handle','heart-ctrl-card'];
+  var BTNS  = ['btn-heart','btn-clipdetail','btn-valveview','btn-4dvalve'];
+  window.__exploreHighlight = function (idx) {
+    CARDS.forEach(function(id){var e=document.getElementById(id);if(e)e.classList.remove('area-hl');});
+    BTNS.forEach(function(id){var e=document.getElementById(id);if(e)e.classList.remove('area-hl');});
+    var hl=document.getElementById('hk-hl'); if(hl) hl.style.display='none';
+    var t=MAP[idx]; if(!t) return;
+    if(t.card){var c=document.getElementById(t.card);if(c){c.classList.add('area-hl');try{c.scrollIntoView({block:'nearest',behavior:'smooth'});}catch(e){}}}
+    if(t.buttons){t.buttons.forEach(function(id){var b=document.getElementById(id);if(b)b.classList.add('area-hl');});}
+    if(t.knob&&hl){hl.setAttribute('x',t.knob[0]);hl.setAttribute('y',t.knob[1]);hl.setAttribute('width',t.knob[2]);hl.setAttribute('height',t.knob[3]);hl.style.display='';}
+  };
+  if (typeof sim !== 'undefined') __exploreHighlight(sim.idx);   // apply on load
+})();
+</script>
+
+<!-- Explore Step 4 (LA navigation): fade the heart to a faint ghost, boost the valve
+     leaflets and swing the camera behind to focus on the valve. Explore only — the
+     guided walkthrough has its own per-beat camera/heart scripting. -->
+<script>
+(function () {
+  'use strict';
+  var FOCUS_STEP  = 3;                                       // sim.idx 3 == displayed "Step 4 / 13"
+  var HEART_GHOST = 0.20;                                    // faint translucent heart (uDensity)
+  var VALVE_C   = new THREE.Vector3(1.82, 10.59, -0.04);    // coaptation gap (valve centre)
+  var VALVE_CAM = new THREE.Vector3(-0.9, 11.4, -4.7);      // behind + zoomed (mirrors the walkthrough valve framing)
+  var active = false, tween = null;
+
+  function leafBoost(on) {                                   // same pattern as the "Valve View" button
+    if (!window.HM) return;
+    HM.aml.opacity = on ? 0.92 : 0.55; HM.aml.transparent = true;
+    HM.pml.opacity = on ? 0.92 : 0.55; HM.pml.transparent = true;
+    HM.annulus.opacity = on ? 0.95 : 0.70;
+  }
+
+  function apply(idx) {
+    if (document.body.classList.contains('tour-mode')) return;   // Explore only
+    var want = (idx === FOCUS_STEP);
+    if (want === active) return;
+    active = want;
+    if (want) {
+      if (window.HEART_VOLSEQ_R) { HEART_VOLSEQ_R.setVisible(true); HEART_VOLSEQ_R.setOpacity(HEART_GHOST); }
+      if (window.heartGrp) heartGrp.visible = true;          // keep the valve leaflets on screen
+      leafBoost(true);
+      tween = { fromP: camera.position.clone(), toP: VALVE_CAM.clone(),
+                fromT: orbit.target.clone(),   toT: VALVE_C.clone(),
+                t0: performance.now(), dur: 1100 };
+    } else {
+      if (window.HEART_VOLSEQ_R) HEART_VOLSEQ_R.setOpacity(1.0);   // restore the full heart
+      leafBoost(false);
+      tween = null;                                          // hand the camera back to free orbit
+    }
+  }
+
+  // Per-frame camera tween (called from animate() just before orbit.update()).
+  window.__exploreCamFrame = function () {
+    if (!tween) return;
+    if (document.body.classList.contains('tour-mode')) { tween = null; return; }  // never fight the walkthrough
+    var e = Math.min(1, (performance.now() - tween.t0) / tween.dur);
+    var s = e < 0.5 ? 2*e*e : 1 - Math.pow(-2*e + 2, 2) / 2;   // easeInOutQuad
+    camera.position.lerpVectors(tween.fromP, tween.toP, s);
+    orbit.target.lerpVectors(tween.fromT, tween.toT, s);
+    if (e >= 1) tween = null;
+  };
+
+  // Fire on every step change.
+  if (typeof refreshStep === 'function') {
+    var _orig = refreshStep;
+    refreshStep = function () { _orig.apply(this, arguments); apply(sim.idx); };
+  }
+  if (typeof sim !== 'undefined') apply(sim.idx);
+})();
 </script>
 </body>
 </html>
